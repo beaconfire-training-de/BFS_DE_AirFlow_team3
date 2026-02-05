@@ -1,0 +1,101 @@
+version: 2
+
+sources:
+  - name: stock_data
+    database: US_STOCK_DAILY
+    schema: DCCM
+    tables:
+      - name: company_profile
+        columns: 
+          - name: symbol
+            tests: 
+              - unique
+              - not_null
+          - name: companyname
+            tests:
+              - not_null
+          - name: mktcap
+            tests:
+              - dbt_utils.accepted_range:
+                  min_value: 0
+                  inclusive: true
+          - name: volavg
+            tests:
+              - dbt_utils.accepted_range:
+                  min_value: 0
+                  inclusive: true
+          
+          - name: price
+            tests:
+              - dbt_utils.accepted_range:
+                  min_value: 0
+                  inclusive: true
+
+      - name: stock_history
+        columns:
+          - name: symbol
+            tests:
+              - not_null
+              - relationships:
+                  to: source('stock_data', 'symbols')
+                  field: symbol
+          - name: date
+            tests:
+              - not_null
+          
+          - name: open
+            tests:
+              - not_null
+              - dbt_utils.accepted_range:
+                  min_value: 0
+                  inclusive: true
+          
+          - name: high
+            tests:
+              - not_null
+              - dbt_utils.accepted_range:
+                  min_value: 0
+                  inclusive: true
+          
+          - name: low
+            tests:
+              - not_null
+              - dbt_utils.accepted_range:
+                  min_value: 0
+                  inclusive: true
+          
+          - name: close
+            tests:
+              - not_null
+              - dbt_utils.accepted_range:
+                  min_value: 0
+                  inclusive: true
+          
+          - name: volume
+            tests:
+              - not_null
+              - dbt_utils.accepted_range:
+                  min_value: 0
+                  inclusive: true
+          
+          - name: adjclose
+            tests:
+              - not_null
+              - dbt_utils.accepted_range:
+                  min_value: 0
+                  inclusive: true
+
+      - name: symbols
+        columns:
+          - name: symbol
+            tests:
+              - unique
+              - not_null
+          - name: name
+            tests:
+              - not_null
+          
+          - name: exchange
+            tests:
+              - not_null
+
