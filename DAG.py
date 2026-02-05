@@ -8,7 +8,7 @@ with DAG(
     schedule_interval="@daily",
     catchup=False,
     default_args=default_args,
-    tags='team3', 'stock', 'dwh', 'scd'],
+    tags=['team3', 'stock', 'dwh', 'scd'],
 ) as dag:
 
     create_tables = SnowflakeOperator(
