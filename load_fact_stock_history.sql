@@ -1,9 +1,9 @@
-MERGE INTO AIRFLOW0105.DEV.FACT_STOCK_HISTORY tgt
+MERGE INTO AIRFLOW0105.DEV.FACT_STOCK_HISTORY_BRANDON tgt
 USING (
     SELECT
         sh.symbol,
         sh.date,
-        cp.company_id,
+        sh.symbol AS company_id,
 
         sh.open,
         sh.high,
@@ -31,20 +31,21 @@ AND tgt.date = src.date
 
 WHEN MATCHED THEN
 UPDATE SET
-    tgt.open = src.open,
-    tgt.high = src.high,
-    tgt.low = src.low,
-    tgt.close = src.close,
-    tgt.volume = src.volume,
-    tgt.adjclose = src.adjclose,
-    tgt.daily_change = src.daily_change,
-    tgt.daily_change_pct = src.daily_change_pct,
-    tgt.beta = src.beta,
-    tgt.mktcap = src.mktcap,
-    tgt.lastdiv = src.lastdiv,
-    tgt.range = src.range,
-    tgt.dcf = src.dcf,
-    tgt.dcfdiff = src.dcfdiff
+    tgt.company_id        = src.company_id,
+    tgt.open              = src.open,
+    tgt.high              = src.high,
+    tgt.low               = src.low,
+    tgt.close             = src.close,
+    tgt.volume            = src.volume,
+    tgt.adjclose          = src.adjclose,
+    tgt.daily_change      = src.daily_change,
+    tgt.daily_change_pct  = src.daily_change_pct,
+    tgt.beta              = src.beta,
+    tgt.mktcap            = src.mktcap,
+    tgt.lastdiv           = src.lastdiv,
+    tgt.range             = src.range,
+    tgt.dcf               = src.dcf,
+    tgt.dcfdiff           = src.dcfdiff
 
 WHEN NOT MATCHED THEN
 INSERT (

@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS AIRFLOW0105.DEV.FACT_STOCK_HISTORY_BRANDON (
     high NUMBER(18,8),
     low NUMBER(18,8),
     close NUMBER(18,8),
-    volume NUMBER(18,8),
+    volume NUMBER(38,0),
     adjclose NUMBER(18,8),
 
     daily_change NUMBER(18,8),
@@ -58,17 +58,19 @@ CREATE TABLE IF NOT EXISTS AIRFLOW0105.DEV.FACT_STOCK_HISTORY_BRANDON (
     moving_avg_90_day NUMBER(18,8),
 
     beta NUMBER(18,8),
-    mktcap NUMBER(18,8),
+    mktcap NUMBER(38,0),
     lastdiv NUMBER(18,8),
-    range NUMBER(18,8),
+    range VARCHAR(64),
     dcf NUMBER(18,8),
     dcfdiff NUMBER(18,8),
 
     CONSTRAINT fk_company
         FOREIGN KEY (company_id)
-        REFERENCES AIRFLOW0105.DEV.DIM_COMPANY_PROFILE(company_id),
+        REFERENCES AIRFLOW0105.DEV.DIM_COMPANY_PROFILE_BRANDON(company_id),
 
     CONSTRAINT fk_symbol
         FOREIGN KEY (symbol)
-        REFERENCES AIRFLOW0105.DEV.DIM_SYMBOL(symbol)
+        REFERENCES AIRFLOW0105.DEV.DIM_SYMBOL_BRANDON(symbol)
 );
+
+DROP TABLE AIRFLOW0105.DEV.FACT_STOCK_HISTORY_BRANDON;
