@@ -1,6 +1,5 @@
 import os
 from datetime import datetime
-
 from cosmos import DbtDag, ProjectConfig, ProfileConfig, ExecutionConfig
 from cosmos.profiles import SnowflakeUserPasswordProfileMapping
 
@@ -8,13 +7,12 @@ profile_config = ProfileConfig(
     profile_name="default",
     target_name="dev",
 
-    # choose one of the following
     profile_mapping=SnowflakeUserPasswordProfileMapping(
         conn_id = 'snowflake_conn',
         profile_args = {'database': 'AIRFLOW0105', 'schema': 'DEV'}
     )
 )
-# /Users/peiyuanlee/dbt-dag/dags/dbt/data_pipeline
+
 dbt_snowflake_dag = DbtDag(
     project_config=ProjectConfig(f"{os.environ['AIRFLOW_HOME']}/dags/dbt/data_pipeline"),
     operator_args={"install_deps": True},
