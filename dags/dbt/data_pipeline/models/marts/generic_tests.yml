@@ -64,8 +64,8 @@ models:
               config:
                 severity: error
           - relationships:
-              to: ref('dim_company_team1')
-              field: company_key
+              to: ref('dim_company_profile_3')
+              field: company_id
               config:
                 severity: error
       
