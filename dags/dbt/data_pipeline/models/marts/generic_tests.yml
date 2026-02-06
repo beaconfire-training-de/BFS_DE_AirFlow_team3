@@ -70,7 +70,6 @@ models:
                 severity: error
       
       - name: date
-        description: "Foreign key to dim_date"
         tests:
           - not_null:
               config:
