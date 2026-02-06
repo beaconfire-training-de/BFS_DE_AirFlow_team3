@@ -5,7 +5,7 @@ This is dimensional data warehouse built with **dbt**, **Airflow**, and **Snowfl
 
 ER Diagram
 ================
-![er diagram](BFS_DE_AirFlow_team3/er_diagram.png)
+![er diagram](er_diagram.png)
 
 
 Tech Stack
