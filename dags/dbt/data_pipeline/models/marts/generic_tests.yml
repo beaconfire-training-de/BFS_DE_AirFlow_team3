@@ -1,0 +1,76 @@
+version: 2
+
+models:
+  - name: dim_company_profile_3
+    columns:
+      - name: company_id
+        tests:
+          - unique:
+              config:
+                severity: error
+          - not_null:
+              config:
+                severity: error
+      
+      - name: symbol
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_symbols_3')
+              field: symbol
+              config:
+                severity: error
+      
+      - name: effective_date
+        tests:
+          - not_null
+      
+      - name: is_current
+        tests:
+          - not_null
+          - accepted_values:
+              values: [true, false]
+              quote: false   
+      
+
+  - name: dim_symbols_3 
+    columns:
+      - name: symbol
+        tests:
+          - unique:
+              config:
+                severity: error
+          - not_null:
+              config:
+                severity: error
+
+
+  - name: fact_stock_history_3
+    
+    columns:
+      - name: fact_id
+        tests:
+          - unique:
+              config:
+                severity: error
+          - not_null:
+              config:
+                severity: error
+      
+      
+      - name: company_id
+        tests:
+          - not_null:
+              config:
+                severity: error
+          - relationships:
+              to: ref('dim_company_profile_3')
+              field: company_id
+              config:
+                severity: error
+      
+      - name: date
+        tests:
+          - not_null:
+              config:
+                severity: error
