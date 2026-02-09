@@ -2,7 +2,7 @@
 Airflow DAG - Stock Data Warehouse ETL
 Team 3
 Author: Shuxuan Li
-Time: 18:41 PST
+Time: 18:55 PST
 """
 
 from airflow import DAG
@@ -272,19 +272,62 @@ USING (
             sfc."CLOSE",
             sfc.VOLUME,
             sfc.ADJCLOSE,
-            -- Daily Change (today's close - yesterday's close)
-            sfc."CLOSE" - LAG(sfc."CLOSE") OVER (PARTITION BY sfc.SYMBOL ORDER BY sfc.DATE_KEY) AS DAILY_CHANGE,
-            -- Daily Change Percentage
-            CASE
-                WHEN LAG(sfc."CLOSE") OVER (PARTITION BY sfc.SYMBOL ORDER BY sfc.DATE_KEY) != 0
-                THEN ((sfc."CLOSE" - LAG(sfc."CLOSE") OVER (PARTITION BY sfc.SYMBOL ORDER BY sfc.DATE_KEY))
-                      / LAG(sfc."CLOSE") OVER (PARTITION BY sfc.SYMBOL ORDER BY sfc.DATE_KEY)) * 100
-                ELSE 0
-            END AS DAILY_CHANGE_PCT,
-            -- Moving Averages
-            AVG(sfc."CLOSE") OVER (PARTITION BY sfc.SYMBOL ORDER BY sfc.DATE_KEY ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS MOVING_AVG_7_DAY,
-            AVG(sfc."CLOSE") OVER (PARTITION BY sfc.SYMBOL ORDER BY sfc.DATE_KEY ROWS BETWEEN 29 PRECEDING AND CURRENT ROW) AS MOVING_AVG_30_DAY,
-            AVG(sfc."CLOSE") OVER (PARTITION BY sfc.SYMBOL ORDER BY sfc.DATE_KEY ROWS BETWEEN 89 PRECEDING AND CURRENT ROW) AS MOVING_AVG_90_DAY,
+            -- Round derived values to align with target NUMBER(18,8) columns.
+            CAST(
+                ROUND(
+                    sfc."CLOSE" - LAG(sfc."CLOSE") OVER (PARTITION BY sfc.SYMBOL ORDER BY sfc.DATE_KEY),
+                    8
+                )
+                AS NUMBER(18,8)
+            ) AS DAILY_CHANGE,
+            CAST(
+                ROUND(
+                    CASE
+                        WHEN LAG(sfc."CLOSE") OVER (PARTITION BY sfc.SYMBOL ORDER BY sfc.DATE_KEY) != 0
+                        THEN (
+                            (
+                                sfc."CLOSE" - LAG(sfc."CLOSE") OVER (PARTITION BY sfc.SYMBOL ORDER BY sfc.DATE_KEY)
+                            ) / LAG(sfc."CLOSE") OVER (PARTITION BY sfc.SYMBOL ORDER BY sfc.DATE_KEY)
+                        ) * 100
+                        ELSE 0
+                    END,
+                    8
+                )
+                AS NUMBER(18,8)
+            ) AS DAILY_CHANGE_PCT,
+            CAST(
+                ROUND(
+                    AVG(sfc."CLOSE") OVER (
+                        PARTITION BY sfc.SYMBOL
+                        ORDER BY sfc.DATE_KEY
+                        ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+                    ),
+                    8
+                )
+                AS NUMBER(18,8)
+            ) AS MOVING_AVG_7_DAY,
+            CAST(
+                ROUND(
+                    AVG(sfc."CLOSE") OVER (
+                        PARTITION BY sfc.SYMBOL
+                        ORDER BY sfc.DATE_KEY
+                        ROWS BETWEEN 29 PRECEDING AND CURRENT ROW
+                    ),
+                    8
+                )
+                AS NUMBER(18,8)
+            ) AS MOVING_AVG_30_DAY,
+            CAST(
+                ROUND(
+                    AVG(sfc."CLOSE") OVER (
+                        PARTITION BY sfc.SYMBOL
+                        ORDER BY sfc.DATE_KEY
+                        ROWS BETWEEN 89 PRECEDING AND CURRENT ROW
+                    ),
+                    8
+                )
+                AS NUMBER(18,8)
+            ) AS MOVING_AVG_90_DAY,
             sfc.BETA,
             sfc.MKTCAP,
             sfc.LASTDIV,
