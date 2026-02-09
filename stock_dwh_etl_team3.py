@@ -1,5 +1,5 @@
 """
-Airflow DAG - Stock Data Warehouse ETL (Cleaned Identifiers)
+Airflow DAG - Stock Data Warehouse ETL 
 Team 3
 Author: Shuxuan Li
 """
