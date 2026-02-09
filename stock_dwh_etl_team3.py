@@ -21,6 +21,33 @@ SNOWFLAKE_CONN_ID = 'jan_airflow_snowflake'
 
 # --- SQL Definitions ---
 
+SQL_CREATE_FACT_STOCK_HISTORY = """
+CREATE TABLE IF NOT EXISTS AIRFLOW0105.DEV.FACT_STOCK_HISTORY_3 (
+    FACT_ID NUMBER AUTOINCREMENT PRIMARY KEY,
+    COMPANY_ID VARCHAR(64),
+    SYMBOL VARCHAR(16) NOT NULL,
+    DATE_KEY NUMBER NOT NULL,
+    OPEN NUMBER(18,8),
+    HIGH NUMBER(18,8),
+    LOW NUMBER(18,8),
+    CLOSE NUMBER(18,8),
+    VOLUME NUMBER(38,8),
+    ADJCLOSE NUMBER(38,8),
+    DAILY_CHANGE NUMBER(18,8),
+    DAILY_CHANGE_PCT NUMBER(18,8),
+    MOVING_AVG_7_DAY NUMBER(18,8),
+    MOVING_AVG_30_DAY NUMBER(18,8),
+    MOVING_AVG_90_DAY NUMBER(18,8),
+    BETA NUMBER(18,8),
+    MKTCAP NUMBER(38,0),
+    LASTDIV NUMBER(18,8),
+    RANGE VARCHAR(64),
+    DCF NUMBER(18,8),
+    DCFDIFF NUMBER(18,8),
+    LOAD_TIME TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
+);
+"""
+
 SQL_CLOSE_DIM_COMPANY_PROFILE = """
 UPDATE AIRFLOW0105.DEV.DIM_COMPANY_PROFILE_3
 SET IS_CURRENT = FALSE,
@@ -38,6 +65,29 @@ WHERE IS_CURRENT = TRUE
         DIM_COMPANY_PROFILE_3.WEBSITE IS DISTINCT FROM source.WEBSITE
       )
 );
+"""
+
+SQL_MERGE_DIM_COMPANY_PROFILE = """
+MERGE INTO AIRFLOW0105.DEV.DIM_COMPANY_PROFILE_3 target
+USING (
+    SELECT DISTINCT
+        SYMBOL AS COMPANY_ID,
+        COMPANYNAME AS NAME,
+        INDUSTRY,
+        WEBSITE,
+        DESCRIPTION,
+        CEO,
+        SECTOR,
+        TRUE AS IS_CURRENT,
+        CURRENT_DATE() AS EFFECTIVE_DATE,
+        NULL AS END_DATE
+    FROM US_STOCK_DAILY.DCCM.COMPANY_PROFILE
+    WHERE SYMBOL IS NOT NULL
+) source
+ON target.COMPANY_ID = source.COMPANY_ID AND target.IS_CURRENT = TRUE
+WHEN NOT MATCHED THEN
+    INSERT (COMPANY_ID, NAME, INDUSTRY, WEBSITE, DESCRIPTION, CEO, SECTOR, IS_CURRENT, EFFECTIVE_DATE, END_DATE)
+    VALUES (source.COMPANY_ID, source.NAME, source.INDUSTRY, source.WEBSITE, source.DESCRIPTION, source.CEO, source.SECTOR, source.IS_CURRENT, source.EFFECTIVE_DATE, source.END_DATE);
 """
 
 SQL_LOAD_DIM_DATE = """
@@ -121,16 +171,28 @@ WHEN NOT MATCHED THEN
 with DAG(
     dag_id='stock_dwh_etl_team3',
     default_args=default_args,
-    description='Stock DWH ETL - Fixed Identifiers',
+    description='Stock DWH ETL - Full Version with Fixes',
     schedule_interval='@daily',
     start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['team3', 'fix'],
 ) as dag:
 
+    create_fact_stock_history = SnowflakeOperator(
+        task_id='create_fact_stock_history',
+        sql=SQL_CREATE_FACT_STOCK_HISTORY,
+        snowflake_conn_id=SNOWFLAKE_CONN_ID,
+    )
+
     close_dim_company_profile = SnowflakeOperator(
         task_id='close_dim_company_profile',
         sql=SQL_CLOSE_DIM_COMPANY_PROFILE,
+        snowflake_conn_id=SNOWFLAKE_CONN_ID,
+    )
+
+    load_dim_company_profile = SnowflakeOperator(
+        task_id='load_dim_company_profile',
+        sql=SQL_MERGE_DIM_COMPANY_PROFILE,
         snowflake_conn_id=SNOWFLAKE_CONN_ID,
     )
 
@@ -146,4 +208,5 @@ with DAG(
         snowflake_conn_id=SNOWFLAKE_CONN_ID,
     )
 
-    close_dim_company_profile >> load_dim_date >> load_fact_stock_history
+    create_fact_stock_history >> close_dim_company_profile >> load_dim_company_profile
+    load_dim_company_profile >> load_dim_date >> load_fact_stock_history
