@@ -1,5 +1,5 @@
 """
-Airflow DAG - Stock Data Warehouse ETL 
+Airflow DAG - Stock Data Warehouse ETL
 Team 3
 Author: Shuxuan Li
 """
@@ -168,14 +168,37 @@ WHEN NOT MATCHED THEN
     );
 """
 
+SQL_VALIDATE_ROW_COUNTS = """
+SELECT 'DIM_COMPANY_PROFILE_3' AS TABLE_NAME, COUNT(*) FROM AIRFLOW0105.DEV.DIM_COMPANY_PROFILE_3
+UNION ALL
+SELECT 'DIM_DATE_3', COUNT(*) FROM AIRFLOW0105.DEV.DIM_DATE_3
+UNION ALL
+SELECT 'FACT_STOCK_HISTORY_3', COUNT(*) FROM AIRFLOW0105.DEV.FACT_STOCK_HISTORY_3;
+"""
+
+SQL_VALIDATE_NULLS = """
+SELECT 'NULL SYMBOL', COUNT(*) FROM AIRFLOW0105.DEV.FACT_STOCK_HISTORY_3 WHERE SYMBOL IS NULL
+UNION ALL
+SELECT 'NULL DATE_KEY', COUNT(*) FROM AIRFLOW0105.DEV.FACT_STOCK_HISTORY_3 WHERE DATE_KEY IS NULL;
+"""
+
+SQL_VALIDATE_REFERENTIAL_INTEGRITY = """
+SELECT 'Orphan SYMBOL in FACT', COUNT(*)
+FROM AIRFLOW0105.DEV.FACT_STOCK_HISTORY_3 f
+LEFT JOIN AIRFLOW0105.DEV.DIM_COMPANY_PROFILE_3 c ON f.COMPANY_ID = c.COMPANY_ID
+WHERE c.COMPANY_ID IS NULL;
+"""
+
+# --- DAG Definition ---
+
 with DAG(
     dag_id='stock_dwh_etl_team3',
     default_args=default_args,
-    description='Stock DWH ETL - Full Version with Fixes',
+    description='Stock DWH ETL - Full Version',
     schedule_interval='@daily',
     start_date=datetime(2024, 1, 1),
     catchup=False,
-    tags=['team3', 'fix'],
+    tags=['team3'],
 ) as dag:
 
     create_fact_stock_history = SnowflakeOperator(
@@ -208,5 +231,26 @@ with DAG(
         snowflake_conn_id=SNOWFLAKE_CONN_ID,
     )
 
+    validate_row_counts = SnowflakeOperator(
+        task_id='validate_row_counts',
+        sql=SQL_VALIDATE_ROW_COUNTS,
+        snowflake_conn_id=SNOWFLAKE_CONN_ID,
+    )
+
+    validate_nulls = SnowflakeOperator(
+        task_id='validate_nulls',
+        sql=SQL_VALIDATE_NULLS,
+        snowflake_conn_id=SNOWFLAKE_CONN_ID,
+    )
+
+    validate_referential_integrity = SnowflakeOperator(
+        task_id='validate_referential_integrity',
+        sql=SQL_VALIDATE_REFERENTIAL_INTEGRITY,
+        snowflake_conn_id=SNOWFLAKE_CONN_ID,
+    )
+
+    # Task dependencies
     create_fact_stock_history >> close_dim_company_profile >> load_dim_company_profile
     load_dim_company_profile >> load_dim_date >> load_fact_stock_history
+    load_fact_stock_history >> [validate_row_counts, validate_nulls, validate_referential_integrity]
+
