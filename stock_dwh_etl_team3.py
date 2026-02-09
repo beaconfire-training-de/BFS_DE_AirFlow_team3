@@ -2,6 +2,7 @@
 Airflow DAG - Stock Data Warehouse ETL
 Team 3
 Author: Shuxuan Li
+Time: 18:14 PST
 """
 
 from airflow import DAG
@@ -105,20 +106,17 @@ UPDATE AIRFLOW0105.DEV.DIM_COMPANY_PROFILE_3 AS target
 SET 
     IS_CURRENT = FALSE,
     END_DATE = CURRENT_TIMESTAMP()
-WHERE IS_CURRENT = TRUE
-AND EXISTS (
-    SELECT 1 
-    FROM US_STOCK_DAILY.DCCM.COMPANY_PROFILE AS source
-    WHERE target.SYMBOL = source.SYMBOL
-    AND (
-        target.COMPANY_NAME IS DISTINCT FROM source.COMPANYNAME OR
-        target.INDUSTRY IS DISTINCT FROM source.INDUSTRY OR
-        target.SECTOR IS DISTINCT FROM source.SECTOR OR
-        target.CEO IS DISTINCT FROM source.CEO OR
-        target.WEBSITE IS DISTINCT FROM source.WEBSITE OR
-        target.DESCRIPTION IS DISTINCT FROM source.DESCRIPTION
-    )
-);
+FROM US_STOCK_DAILY.DCCM.COMPANY_PROFILE AS source
+WHERE target.IS_CURRENT = TRUE
+  AND target.SYMBOL = source.SYMBOL
+  AND (
+      target.COMPANY_NAME IS DISTINCT FROM source.COMPANYNAME OR
+      target.INDUSTRY IS DISTINCT FROM source.INDUSTRY OR
+      target.SECTOR IS DISTINCT FROM source.SECTOR OR
+      target.CEO IS DISTINCT FROM source.CEO OR
+      target.WEBSITE IS DISTINCT FROM source.WEBSITE OR
+      target.DESCRIPTION IS DISTINCT FROM source.DESCRIPTION
+  );
 """
 
 # Step 2 for DIM_COMPANY_PROFILE_3 SCD2: insert new company rows and new versions
